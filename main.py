@@ -1,7 +1,7 @@
 from pkg.platform.types import MessageChain
 from pkg.plugin.context import register, handler, llm_func, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import *
-from ehentai_downloader.utils.platform_adapter import send_pdf
+from plugins.HelloPlugin.utils.temp2 import upload_file
 import re
 
 # 注册插件
