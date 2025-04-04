@@ -1,9 +1,11 @@
+from pkg.platform.types import MessageChain
 from pkg.plugin.context import register, handler, llm_func, BasePlugin, APIHost, EventContext
-from pkg.plugin.events import *  # 导入事件类
-
+from pkg.plugin.events import *
+from ehentai_downloader.utils.platform_adapter import send_pdf
+import re
 
 # 注册插件
-@register(name="Hello", description="hello world", version="0.1", author="RockChinQ")
+@register(name="test_file_sender", description="测试发送文件", version="1.0", author="drdon1234")
 class MyPlugin(BasePlugin):
 
     # 插件加载时触发
@@ -14,36 +16,23 @@ class MyPlugin(BasePlugin):
     async def initialize(self):
         pass
 
-    # 当收到个人消息时触发
     @handler(PersonNormalMessageReceived)
-    async def person_normal_message_received(self, ctx: EventContext):
-        msg = ctx.event.text_message  # 这里的 event 即为 PersonNormalMessageReceived 的对象
-        if msg == "hello":  # 如果消息为hello
-
-            # 输出调试信息
-            self.ap.logger.debug("hello, {}".format(ctx.event.sender_id))
-
-            # 回复消息 "hello, <发送者id>!"
-            ctx.add_return("reply", ["hello, {}!".format(ctx.event.sender_id)])
-
-            # 阻止该事件默认行为（向接口获取回复）
-            ctx.prevent_default()
-
-    # 当收到群消息时触发
     @handler(GroupNormalMessageReceived)
-    async def group_normal_message_received(self, ctx: EventContext):
-        msg = ctx.event.text_message  # 这里的 event 即为 GroupNormalMessageReceived 的对象
-        if msg == "hello":  # 如果消息为hello
-
-            # 输出调试信息
-            self.ap.logger.debug("hello, {}".format(ctx.event.sender_id))
-
-            # 回复消息 "hello, everyone!"
-            ctx.add_return("reply", ["hello, everyone!"])
-
-            # 阻止该事件默认行为（向接口获取回复）
+    async def message_received(self, ctx: EventContext):
+        receive_text = ctx.event.text_message
+        cleaned_text = re.sub(r'@\S+\s*', '', receive_text).strip()
+        prevent_default = self.options.prevent_default
+        if cleaned_text.startswith('测试发送文件'):
+            await self.do_test_upload_file(ctx)
+        else:
+            prevent_default = False
+        if prevent_default:
             ctx.prevent_default()
 
     # 插件卸载时触发
     def __del__(self):
         pass
+
+    # 测试发送文件
+    async def do_test_upload_file(self, ctx: EventContext):
+        upload_file(ctx, "./test.pdf", "test.pdf")
