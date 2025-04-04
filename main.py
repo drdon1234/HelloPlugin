@@ -21,7 +21,7 @@ class MyPlugin(BasePlugin):
     async def message_received(self, ctx: EventContext):
         receive_text = ctx.event.text_message
         cleaned_text = re.sub(r'@\S+\s*', '', receive_text).strip()
-        prevent_default = self.options.prevent_default
+        prevent_default = True
         if cleaned_text.startswith('测试发送文件'):
             await self.do_test_upload_file(ctx)
         else:
