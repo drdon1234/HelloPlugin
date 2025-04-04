@@ -2,7 +2,7 @@ import yaml
 import aiohttp
 from pathlib import Path
 
-config_path = Path(__file__).parent.parent.parent / "config.yaml"
+config_path = Path(__file__).parent.parent / "config.yaml"
 
 with open(config_path, "r", encoding="utf-8") as file:
     config = yaml.safe_load(file)
