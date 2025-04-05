@@ -35,4 +35,4 @@ class MyPlugin(BasePlugin):
 
     # 测试发送文件
     async def do_test_upload_file(self, ctx: EventContext):
-        await upload_file(ctx, "/app/sharedFolder/test.pdf", "test.pdf")
+        await upload_file(ctx, "/app/sharedFolder", "test.pdf")
