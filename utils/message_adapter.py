@@ -1,4 +1,5 @@
 import os
+import re
 import yaml
 import aiohttp
 import glob
@@ -108,7 +109,9 @@ async def get_group_folder_id(group_id, folder_name: str = '/'):
 
 
 async def upload_file(ctx, path, name, folder_name='/'):
-    pattern = os.path.join(path, f"{name}(_part[0-9]+)?.pdf")
+    base_name = os.path.splitext(name)[0]
+    sanitized_name = re.sub(r'[^\w\-_]', '_', base_name)
+    pattern = os.path.join(path, f"{sanitized_name}(_part[0-9]+)?.pdf")
     files = natsorted(glob.glob(pattern))
     
     if not files:
