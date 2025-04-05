@@ -103,35 +103,49 @@ async def get_group_folder_id(group_id, folder_name: str = '/'):
     return folder_id
 
 
-async def upload_file(ctx, file, name, folder_name='/'):
+async def upload_file(ctx, path, name, folder_name='/'):
+    pattern = os.path.join(path, f"{name}(_part[0-9]+)?.pdf")
+    files = natsorted(glob.glob(pattern))
+    if not files:
+        raise FileNotFoundError(f"未找到符合: {pattern} 命名的文件")
+        return
+    payloads = []
+    
     is_private = ctx.event.launcher_type == "person"
     target_id = ctx.event.sender_id
     if is_private:  # 私聊
         url = f"http://{http_host}:{http_port}/upload_private_file"
-        payload = {
-            "user_id": target_id,
-            "file": file,
-            "name": name
-        }
+        for file in files:
+            payloads.append[
+                payload = {
+                    "user_id": target_id,
+                    "file": file,
+                    "name": os.path.basename(file)
+                }
+            ]
     else:  # 群聊
         url = f"http://{http_host}:{http_port}/upload_group_file"
         folder_id = await get_group_folder_id(target_id, folder_name)
-        payload = {
-            "group_id": target_id,
-            "file": file,
-            "name": name,
-            "folder_id": folder_id
-        }
+        for file in files:
+            payloads.append[
+                payload = {
+                    "group_id": target_id,
+                    "file": file,
+                    "name": os.path.basename(file),
+                    "folder_id": folder_id
+                }
+            ]
 
     headers = get_headers()
-    print("发送给消息平台->" + str(payload))
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, json=payload, headers=headers) as response:
-            if response.status != 200:
-                raise Exception(f"上传失败，状态码: {response.status}, 错误信息: {await response.text()}")
-            res = await response.json()
-            print("消息平台返回->" + str(res))
-            if res["status"] != "ok":
-                raise Exception(f"上传失败，状态码: {res['status']}\n完整消息: {str(res)}")
-            return res.get("data")
+    for payload in payloads:
+        print("发送给消息平台->" + str(payload))
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, headers=headers) as response:
+                if response.status != 200:
+                    raise Exception(f"上传失败，状态码: {response.status}, 错误信息: {await response.text()}")
+                res = await response.json()
+                print("消息平台返回->" + str(res))
+                if res["status"] != "ok":
+                    raise Exception(f"上传失败，状态码: {res['status']}\n完整消息: {str(res)}")
+                return res.get("data")
