@@ -2,6 +2,8 @@ import os
 import yaml
 import aiohttp
 from pathlib import Path
+from natsort import natsorted
+
 
 config_path = Path(__file__).parent.parent / "config.yaml"
 
