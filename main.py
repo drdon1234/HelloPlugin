@@ -1,4 +1,4 @@
-safrom pkg.platform.types import MessageChain
+from pkg.platform.types import MessageChain
 from pkg.plugin.context import register, handler, llm_func, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import *
 from plugins.HelloPlugin.utils.message_adapter import upload_file
