@@ -106,46 +106,71 @@ async def get_group_folder_id(group_id, folder_name: str = '/'):
 async def upload_file(ctx, path, name, folder_name='/'):
     pattern = os.path.join(path, f"{name}(_part[0-9]+)?.pdf")
     files = natsorted(glob.glob(pattern))
+    
     if not files:
         raise FileNotFoundError(f"未找到符合: {pattern} 命名的文件")
-        return
-    payloads = []
-    
+
     is_private = ctx.event.launcher_type == "person"
     target_id = ctx.event.sender_id
-    if is_private:  # 私聊
-        url = f"http://{http_host}:{http_port}/upload_private_file"
-        for file in files:
-            payloads.append[
-                payload = {
-                    "user_id": target_id,
-                    "file": file,
-                    "name": os.path.basename(file)
-                }
-            ]
-    else:  # 群聊
-        url = f"http://{http_host}:{http_port}/upload_group_file"
-        folder_id = await get_group_folder_id(target_id, folder_name)
-        for file in files:
-            payloads.append[
-                payload = {
-                    "group_id": target_id,
-                    "file": file,
-                    "name": os.path.basename(file),
-                    "folder_id": folder_id
-                }
-            ]
+    url_type = "upload_private_file" if is_private else "upload_group_file"
+    url = f"http://{http_host}:{http_port}/{url_type}"
 
+    base_payload = {
+        "file": None,
+        "name": None,
+        "user_id" if is_private else "group_id": target_id
+    }
+    if not is_private:
+        base_payload["folder_id"] = await get_group_folder_id(target_id, folder_name)
+
+    tasks = []
     headers = get_headers()
+    
+    async with aiohttp.ClientSession() as session:
+        for file in files:
+            payload = base_payload.copy()
+            payload.update({
+                "file": file,
+                "name": os.path.basename(file)
+            })
+            
+            tasks.append(
+                self._upload_single_file(session, url, headers, payload)
+            )
 
-    for payload in payloads:
-        print("发送给消息平台->" + str(payload))
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers) as response:
-                if response.status != 200:
-                    raise Exception(f"上传失败，状态码: {response.status}, 错误信息: {await response.text()}")
-                res = await response.json()
-                print("消息平台返回->" + str(res))
-                if res["status"] != "ok":
-                    raise Exception(f"上传失败，状态码: {res['status']}\n完整消息: {str(res)}")
-                return res.get("data")
+        # 并发执行并收集结果
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return self._process_results(results)
+
+
+async def _upload_single_file(self, session, url, headers, payload):
+    try:
+        async with session.post(url, json=payload, headers=headers) as response:
+            response.raise_for_status()
+            res = await response.json()
+            
+            if res["status"] != "ok":
+                return {"success": False, "error": res.get("message")}
+                
+            return {"success": True, "data": res.get("data")}
+            
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def _process_results(self, results):
+    successes = [r["data"] for r in results if r["success"]]
+    errors = [r["error"] for r in results if not r["success"]]
+    
+    if errors:
+        logging.warning(f"部分文件上传失败: {errors}")
+    
+    return {
+        "total": len(results),
+        "success_count": len(successes),
+        "failed_count": len(errors),
+        "details": {
+            "successes": successes,
+            "errors": errors
+        }
+    }
