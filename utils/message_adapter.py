@@ -109,10 +109,13 @@ async def get_group_folder_id(group_id, folder_name: str = '/'):
 
 
 async def upload_file(ctx, path, name, folder_name='/'):
-    base_name = os.path.splitext(name)[0]
-    sanitized_name = re.sub(r'[^\w\-_]', '_', base_name)
-    pattern = os.path.join(path, f"{sanitized_name}(_part[0-9]+)?.pdf")
-    files = natsorted(glob.glob(pattern))
+    # 清洗文件名后缀，移除扩展名
+    base_name = os.path.splitext(name)[0]  # 剥离后缀
+    sanitized_name = re.sub(r'[^\w\-_]', '_', base_name)  # 特殊字符过滤
+
+    # 使用 glob 的通配符模式进行匹配
+    pattern = os.path.join(path, f"{sanitized_name}*.pdf")  # 匹配所有相关文件
+    files = natsorted(glob.glob(pattern))  # 自然排序
     
     if not files:
         raise FileNotFoundError(f"未找到符合: {pattern} 命名的文件")
