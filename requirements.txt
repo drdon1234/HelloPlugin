@@ -1,0 +1,6 @@
+aiohttp
+asyncio
+glob2
+natsort
+pathlib
+yaml
